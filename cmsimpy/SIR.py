@@ -1,29 +1,35 @@
+import copy
+from enum import Enum
 import numpy as np
 
 from .Model import Model
 
 
+class Compartment(Enum):
+    SUSCEPTIBLE = 0
+    INFECTIOUS = 1
+    RECOVERED = 2
+
+
 class SIR(Model):
-    def __init__(self, popSize, h, beta, gamma):
-        self.popSize = popSize
+    def __init__(self, h, beta, gamma):
         self.h = h
         self.beta = beta
         self.gamma = gamma
         self.exphgamma = np.exp(-h * gamma)
         self.compExphgamma = 1 - self.exphgamma
-        self.knownP = dict()
 
-    def step(self, m):
-        (m1, m2, m3) = m
-        varlambda = self.beta * m2
+    def step(self, curState):
+        varlambda = self.beta * curState[Compartment.INFECTIOUS]
         pStar = 1 - np.exp(-self.h * varlambda)
-        Inew = np.random.binomial(m1, pStar)
-        Rnew = np.random.binomial(m2, self.compExphgamma)
+        Inew = np.random.binomial(curState[Compartment.SUSCEPTIBLE],
+                                  pStar)
+        Rnew = np.random.binomial(curState[Compartment.INFECTIOUS],
+                                  self.compExphgamma)
 
         # Compartmental updating rules
-        n1 = m1 - Inew
-        n2 = m2 + Inew - Rnew
-        n3 = m3 + Rnew
-        n = (n1, n2, n3)
-        assert sum(n) == self.popSize
-        return n
+        newState = copy.copy(curState)
+        newState[Compartment.SUSCEPTIBLE] -= Inew
+        newState[Compartment.INFECTIOUS] += Inew - Rnew
+        newState[Compartment.RECOVERED] += Rnew
+        return newState

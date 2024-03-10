@@ -20,11 +20,10 @@ class Compartment(Enum):
 
 
 class BECovid19(Model):
-    def __init__(self, popSize, h, qcsym, qcasym, gamma,
+    def __init__(self, h, qcsym, qcasym, gamma,
                  ptheta, minptheta, delta1, delta2,
                  psi, phiomega, minphiomega, delta3,
                  tau, delta4):
-        self.popSize = popSize
         self.h = h
         self.qcsym = qcsym
         self.qcasym = qcasym

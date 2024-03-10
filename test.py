@@ -4,8 +4,7 @@ from cmsimpy import BECovid19, SIR
 
 
 def simulateBECovid19():
-    model = BECovid19.BECovid19(popSize=10,
-                                h=1.0 / 24.0,
+    model = BECovid19.BECovid19(h=1.0 / 24.0,
                                 qcsym=0.051 * 1.52,
                                 qcasym=0.051 * 6.06,
                                 gamma=0.729,
@@ -23,11 +22,16 @@ def simulateBECovid19():
 
 
 def simulateSIR():
-    model = SIR.SIR(popSize=4,
-                    h=1.0/24.0,
+    model = SIR.SIR(h=1.0/24.0,
                     beta=1.0/2.0,
                     gamma=1.0/6.0)
+    state = {SIR.Compartment.SUSCEPTIBLE: 3,
+             SIR.Compartment.INFECTIOUS: 1,
+             SIR.Compartment.RECOVERED: 0}
     print("Simulating")
+    for _ in range(100):
+        state = model.step(state)
+        print(state)
 
 
 if __name__ == "__main__":
