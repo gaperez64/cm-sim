@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import matplotlib.pyplot as plt
+from statistics import mean
+
 from cmsimpy import BECovid19, SIR
 
 
@@ -26,14 +29,14 @@ def simulateBECovid19():
 
 def simulateSIR():
     model = SIR.SIR(h=1.0 / 24.0,
-                    beta=1.0 / 2.0,
-                    gamma=0.729)
+                    beta=0.001,
+                    gamma=0.2)
     trajectories = []
     for i in range(noSims):
         if i % 10 == 0:
             print(f"Simulation no. {i + 1}")
-        state = {SIR.Compartment.SUSCEPTIBLE: 10,
-                 SIR.Compartment.INFECTIOUS: 100,
+        state = {SIR.Compartment.SUSCEPTIBLE: 1000,
+                 SIR.Compartment.INFECTIOUS: 2,
                  SIR.Compartment.RECOVERED: 0}
         trajectories.append([state])
         while state[SIR.Compartment.INFECTIOUS] > 0:
@@ -41,6 +44,37 @@ def simulateSIR():
             trajectories[-1].append(state)
 
     # Now we can plot the averages per timestep
+    def proj(state, c):
+        return state[c]
+
+    maxlen = max([len(t) for t in trajectories])
+    pertim = map(lambda i: [t[i] if i < len(t)
+                            else t[-1]
+                            for t in trajectories],
+                 range(maxlen))
+    pertim = list(pertim)
+    inftim = map(lambda subl:
+                 map(lambda x: proj(x, SIR.Compartment.INFECTIOUS), subl),
+                 pertim)
+    sustim = map(lambda subl:
+                 map(lambda x: proj(x, SIR.Compartment.SUSCEPTIBLE), subl),
+                 pertim)
+    rectim = map(lambda subl:
+                 map(lambda x: proj(x, SIR.Compartment.RECOVERED), subl),
+                 pertim)
+    avginf = map(mean, inftim)
+    avgsus = map(mean, sustim)
+    avgrec = map(mean, rectim)
+    times = list(map(lambda i: i * model.h, range(maxlen)))
+
+    # Plotting
+    plt.plot(times, list(avgsus), label="Susceptible")
+    plt.plot(times, list(avginf), label="Infectious")
+    plt.plot(times, list(avgrec), label="Recovered")
+    plt.xlabel("Time")
+    plt.ylabel("Average no. of people")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
