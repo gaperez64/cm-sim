@@ -2,7 +2,7 @@ import copy
 from enum import Enum
 import numpy as np
 
-import Model
+from .Model import Model
 
 
 # I want to use a dictionary for states, these are the keys
