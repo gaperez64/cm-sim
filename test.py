@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-import matplotlib.pyplot as plt
-from statistics import mean
-
-from cmsimpy import BECovid19, SIR
+from cmsimpy import BECovid19, Sim, SIR
 
 
 noSims = 1000
@@ -24,6 +21,31 @@ def simulateBECovid19():
                                 delta3=0.184075,
                                 tau=0.000925,
                                 delta4=0.184075)
+    initial = {BECovid19.Compartment.SUSCEPTIBLE: 1000,
+               BECovid19.Compartment.EXPOSED: 0,
+               BECovid19.Compartment.INFD_PRESYM: 0,
+               BECovid19.Compartment.INFD_ASYM: 1,
+               BECovid19.Compartment.INFD_MILD: 1,
+               BECovid19.Compartment.INFD_SEV: 1,
+               BECovid19.Compartment.INFD_HOSP: 0,
+               BECovid19.Compartment.INFD_ICU: 0,
+               BECovid19.Compartment.DEAD: 0,
+               BECovid19.Compartment.RECOVERED: 0}
+
+    def endPred(state):
+        totInf = [state[BECovid19.Compartment.INFD_PRESYM],
+                  state[BECovid19.Compartment.INFD_PRESYM],
+                  state[BECovid19.Compartment.INFD_ASYM],
+                  state[BECovid19.Compartment.INFD_MILD],
+                  state[BECovid19.Compartment.INFD_SEV],
+                  state[BECovid19.Compartment.INFD_HOSP],
+                  state[BECovid19.Compartment.INFD_ICU]]
+        return sum(totInf) == 0
+
+    trajectories = Sim.simulate(model, initial, noSims, endPred)
+    Sim.plotTrajectories(trajectories,
+                         [k for k in BECovid19.Compartment],
+                         model.h)
     print("Simulating")
 
 
@@ -31,52 +53,19 @@ def simulateSIR():
     model = SIR.SIR(h=1.0 / 24.0,
                     beta=0.001,
                     gamma=0.2)
-    trajectories = []
-    for i in range(noSims):
-        if i % 10 == 0:
-            print(f"Simulation no. {i + 1}")
-        state = {SIR.Compartment.SUSCEPTIBLE: 1000,
-                 SIR.Compartment.INFECTIOUS: 2,
-                 SIR.Compartment.RECOVERED: 0}
-        trajectories.append([state])
-        while state[SIR.Compartment.INFECTIOUS] > 0:
-            state = model.step(state)
-            trajectories[-1].append(state)
+    initial = {SIR.Compartment.SUSCEPTIBLE: 1000,
+               SIR.Compartment.INFECTIOUS: 2,
+               SIR.Compartment.RECOVERED: 0}
 
-    # Now we can plot the averages per timestep
-    def proj(state, c):
-        return state[c]
+    def endPred(state):
+        return state[SIR.Compartment.INFECTIOUS] == 0
 
-    maxlen = max([len(t) for t in trajectories])
-    pertim = map(lambda i: [t[i] if i < len(t)
-                            else t[-1]
-                            for t in trajectories],
-                 range(maxlen))
-    pertim = list(pertim)
-    inftim = map(lambda subl:
-                 map(lambda x: proj(x, SIR.Compartment.INFECTIOUS), subl),
-                 pertim)
-    sustim = map(lambda subl:
-                 map(lambda x: proj(x, SIR.Compartment.SUSCEPTIBLE), subl),
-                 pertim)
-    rectim = map(lambda subl:
-                 map(lambda x: proj(x, SIR.Compartment.RECOVERED), subl),
-                 pertim)
-    avginf = map(mean, inftim)
-    avgsus = map(mean, sustim)
-    avgrec = map(mean, rectim)
-    times = list(map(lambda i: i * model.h, range(maxlen)))
-
-    # Plotting
-    plt.plot(times, list(avgsus), label="Susceptible")
-    plt.plot(times, list(avginf), label="Infectious")
-    plt.plot(times, list(avgrec), label="Recovered")
-    plt.xlabel("Time")
-    plt.ylabel("Average no. of people")
-    plt.legend()
-    plt.show()
+    trajectories = Sim.simulate(model, initial, noSims, endPred)
+    Sim.plotTrajectories(trajectories,
+                         [k for k in SIR.Compartment],
+                         model.h)
 
 
 if __name__ == "__main__":
-    simulateSIR()
+    simulateBECovid19()
     exit(0)
