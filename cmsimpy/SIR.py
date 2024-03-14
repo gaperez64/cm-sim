@@ -1,11 +1,11 @@
 import copy
-from enum import Enum
+from enum import IntEnum
 import numpy as np
 
 from .Model import Model
 
 
-class Compartment(Enum):
+class Compartment(IntEnum):
     SUSCEPTIBLE = 0
     INFECTIOUS = 1
     RECOVERED = 2

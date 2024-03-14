@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-import tensorflow as tf
-
-from cmsimpy import BECovid19, Sim, SIR, ML
+from cmsimpy import BECovid19, ML, \
+                    Sim, SIR
 
 
 noSims = 1000
@@ -75,10 +74,12 @@ def simulateSIR():
 
 def trainSIR():
     (model, initial) = initSIR()
-    nn = ML.createNNP(SIR.Compartment)
-    nn.summary()
-    print(list(initial.values()) + list(initial.values()))
-    print(nn(tf.constant(list(initial.values()) + list(initial.values()))))
+    # nn = ML.createNNP(SIR.Compartment)
+    # nn.summary()
+    data = ML.arraySuccFreq(model, initial,
+                            100, 100)
+    print(data.shape)
+    print(data[1:4])
 
 
 if __name__ == "__main__":

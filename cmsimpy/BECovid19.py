@@ -1,12 +1,12 @@
 import copy
-from enum import Enum
+from enum import IntEnum
 import numpy as np
 
 from .Model import Model
 
 
 # I want to use a dictionary for states, these are the keys
-class Compartment(Enum):
+class Compartment(IntEnum):
     SUSCEPTIBLE = 0
     EXPOSED = 1
     INFD_PRESYM = 2
