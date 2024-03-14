@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-from cmsimpy import BECovid19, Sim, SIR
+import tensorflow as tf
+
+from cmsimpy import BECovid19, Sim, SIR, ML
 
 
 noSims = 1000
@@ -49,13 +51,18 @@ def simulateBECovid19():
     print("Simulating")
 
 
-def simulateSIR():
+def initSIR():
     model = SIR.SIR(h=1.0 / 24.0,
                     beta=0.001,
                     gamma=0.2)
     initial = {SIR.Compartment.SUSCEPTIBLE: 1000,
                SIR.Compartment.INFECTIOUS: 2,
                SIR.Compartment.RECOVERED: 0}
+    return (model, initial)
+
+
+def simulateSIR():
+    (model, initial) = initSIR()
 
     def endPred(state):
         return state[SIR.Compartment.INFECTIOUS] == 0
@@ -66,6 +73,14 @@ def simulateSIR():
                          model.h)
 
 
+def trainSIR():
+    (model, initial) = initSIR()
+    nn = ML.createNNP(SIR.Compartment)
+    nn.summary()
+    print(list(initial.values()) + list(initial.values()))
+    print(nn(tf.constant(list(initial.values()) + list(initial.values()))))
+
+
 if __name__ == "__main__":
-    simulateBECovid19()
+    trainSIR()
     exit(0)
