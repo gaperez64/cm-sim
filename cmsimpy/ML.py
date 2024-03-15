@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 import keras
 from keras import layers
@@ -13,14 +14,11 @@ def createNNP(compartments):
     # prepare some factorials, but since there's no
     # factorial function in tensorflow, we compose the log
     # of the gamma function with the exponential
-    y = layers.Dense(16, activation=tf.math.lgamma)(w)
-    y = layers.Dense(16, activation=tf.math.exp)(y)
-    # prepare some exponentials
-    z = layers.Dense(16, activation=tf.math.exp)(w)
+    x = layers.Dense(16, activation=tf.math.lgamma)(w)
     # concatenate all of them
-    x = layers.Dense(16, activation="relu")(w)
-    c = layers.Concatenate()([x, y, z])
-    c = layers.Dense(16, activation="relu")(c)
+    y = layers.Dense(16, activation="relu")(w)
+    c = layers.Concatenate()([w, x, y])
+    c = layers.Dense(16, activation="softmax")(c)
     # prepare a single output
     outputs = layers.Dense(1)(c)
     model = keras.Model(inputs=inputs, outputs=outputs)
@@ -59,3 +57,13 @@ def arraySuccFreq(model, state, sampleSize, numSucc):
         row.append(v)
         data.append(row)
     return np.array(data)
+
+
+def pdSuccFreq(model, state, sampleSize, numSucc):
+    array = arraySuccFreq(model, state, sampleSize, numSucc)
+    sknames = [k.name for k in sorted(state.keys())]
+    srcnames = ["src." + s for s in sknames]
+    tgtnames = ["tgt." + s for s in sknames]
+    colnames = srcnames + tgtnames + ["prob"]
+    df = pd.DataFrame(data=array, columns=colnames)
+    return df

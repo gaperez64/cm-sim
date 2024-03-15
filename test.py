@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import pandas as pd
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
 from cmsimpy import BECovid19, ML, \
                     Sim, SIR
 
@@ -74,12 +78,77 @@ def simulateSIR():
 
 def trainSIR():
     (model, initial) = initSIR()
-    # nn = ML.createNNP(SIR.Compartment)
-    # nn.summary()
-    data = ML.arraySuccFreq(model, initial,
+    nn = ML.createNNP(SIR.Compartment)
+    nn.summary()
+    dataset = ML.pdSuccFreq(model, initial,
                             100, 100)
-    print(data.shape)
-    print(data[1:4])
+
+    # split dataset into training and test data
+    train_dataset = dataset.sample(frac=0.8, random_state=0)
+    test_dataset = dataset.drop(train_dataset.index)
+
+    # split features from labels
+    train_features = train_dataset.copy()
+    test_features = test_dataset.copy()
+    train_labels = train_features.pop("prob")
+    test_labels = test_features.pop("prob")
+    # print(train_dataset.describe().transpose())
+
+    # test prediction
+    print(train_features[1:6])
+    print(nn(train_features[1:6]))
+
+    # prepare for training
+    nn.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
+        loss="mean_absolute_error"
+    )
+
+    history = nn.fit(
+        train_features,
+        train_labels,
+        epochs=100,
+        verbose=0,
+        # Calculate validation results on 20% of the training data.
+        validation_split=0.2
+    )
+
+    # A bit of the history of training
+    hist = pd.DataFrame(history.history)
+    hist['epoch'] = history.epoch
+    print(hist.tail())
+
+    # Visualize losses through training
+    def plot_loss(history):
+        plt.plot(history.history['loss'], label='loss')
+        plt.plot(history.history['val_loss'], label='val_loss')
+        plt.ylim([0, 1])
+        plt.xlabel('Epoch')
+        plt.ylabel('Error [prob]')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    plot_loss(history)
+
+    # Collect test results
+    test_predictions = nn.predict(test_features).flatten()
+
+    a = plt.axes(aspect='equal')
+    plt.scatter(test_labels, test_predictions)
+    plt.xlabel('True Values [prob]')
+    plt.ylabel('Predictions [prob]')
+    lims = [0, 1]
+    plt.xlim(lims)
+    plt.ylim(lims)
+    _ = plt.plot(lims, lims)
+    plt.show()
+
+    error = test_predictions - test_labels
+    plt.hist(error, bins=25)
+    plt.xlabel('Prediction Error [prob]')
+    _ = plt.ylabel('Count')
+    plt.show()
 
 
 if __name__ == "__main__":
