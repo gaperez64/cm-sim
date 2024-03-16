@@ -9,16 +9,23 @@ from keras import layers
 
 def createNNP(compartments):
     inputs = keras.Input(shape=(2 * len(compartments),))
-    # allow for linear transformations of the input
-    w = layers.Dense(32, activation="relu")(inputs)
     # prepare some factorials, but since there's no
     # factorial function in tensorflow, we compose the log
-    # of the gamma function with the exponential
-    x = layers.Dense(16, activation=tf.math.lgamma)(w)
-    # concatenate all of them
-    y = layers.Dense(16, activation="relu")(w)
-    c = layers.Concatenate()([w, x, y])
-    c = layers.Dense(16, activation="softmax")(c)
+    # of the gamma function with the exponential (below)
+    x = layers.Dense(8, activation="relu")(inputs)
+    x = layers.Dense(3, activation=tf.math.lgamma)(x)
+    # concatenate all of them, including a copy of the input
+    y = layers.Dense(8, activation="relu")(inputs)
+    c = layers.Concatenate()([x, y])
+    # softmax is a sort of normalized exponential, applied to
+    # x it gives us a sort of factorial, applied to y it gives an
+    # exponential
+    c = layers.Dense(8, activation="relu")(c)
+    c = layers.Dense(3, activation=tf.math.exp)(c)
+    # we also add a linear function of the inputs
+    z = layers.Dense(8, activation="relu")(inputs)
+    c = layers.Concatenate()([c, z])
+    c = layers.Dense(3, activation="relu")(c)
     # prepare a single output
     outputs = layers.Dense(1)(c)
     model = keras.Model(inputs=inputs, outputs=outputs)
@@ -41,7 +48,10 @@ def sampleSuccFreq(model, state, sampleSize, numSucc):
         for k, v in local.items():
             assert v / cnt <= 1
             frequencies[(frozenset(curState.items()), k)] = v / cnt
-        curState = newState
+        if curState != newState:
+            curState = newState
+        else:
+            curState = state
     return frequencies
 
 

@@ -58,7 +58,7 @@ def initSIR():
     model = SIR.SIR(h=1.0 / 24.0,
                     beta=0.001,
                     gamma=0.2)
-    initial = {SIR.Compartment.SUSCEPTIBLE: 1000,
+    initial = {SIR.Compartment.SUSCEPTIBLE: 50,
                SIR.Compartment.INFECTIOUS: 2,
                SIR.Compartment.RECOVERED: 0}
     return (model, initial)
@@ -81,7 +81,7 @@ def trainSIR():
     nn = ML.createNNP(SIR.Compartment)
     nn.summary()
     dataset = ML.pdSuccFreq(model, initial,
-                            100, 100)
+                            10000, 1000)
 
     # split dataset into training and test data
     train_dataset = dataset.sample(frac=0.8, random_state=0)
@@ -92,24 +92,24 @@ def trainSIR():
     test_features = test_dataset.copy()
     train_labels = train_features.pop("prob")
     test_labels = test_features.pop("prob")
-    # print(train_dataset.describe().transpose())
+    print(train_dataset.describe().transpose())
 
-    # test prediction
-    print(train_features[1:6])
-    print(nn(train_features[1:6]))
+    # test prediction run
+    print(train_features[1:3])
+    print(nn(train_features[1:3]))
 
     # prepare for training
     nn.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
         loss="mean_absolute_error"
     )
 
     history = nn.fit(
         train_features,
         train_labels,
-        epochs=100,
+        epochs=1000,
         verbose=0,
-        # Calculate validation results on 20% of the training data.
+        # Calculate validation results on % of the training data
         validation_split=0.2
     )
 
@@ -122,7 +122,7 @@ def trainSIR():
     def plot_loss(history):
         plt.plot(history.history['loss'], label='loss')
         plt.plot(history.history['val_loss'], label='val_loss')
-        plt.ylim([0, 1])
+        plt.ylim([0, 0.5])
         plt.xlabel('Epoch')
         plt.ylabel('Error [prob]')
         plt.legend()
